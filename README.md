@@ -60,8 +60,8 @@ Open **http://localhost:3000** in your browser.
 
 | Service  | URL |
 |----------|-----|
-| Frontend | _TBD — deploy to AWS Amplify_ |
-| Backend  | _TBD — deploy to AWS EC2 / Lambda_ |
+| Frontend | Deployed on **Vercel** |
+| Backend  | Deployed on **Render** |
 
 ---
 
