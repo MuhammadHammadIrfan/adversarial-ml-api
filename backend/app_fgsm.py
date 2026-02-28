@@ -32,10 +32,21 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Model & attack initialization
 # ---------------------------------------------------------------------------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import os
+import urllib.request
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = SimpleCNN().to(device)
-model.load_state_dict(torch.load("mnist_cnn.pth", map_location=device))
+
+model_path = "mnist_cnn.pth"
+if not os.path.exists(model_path):
+    print("Model weights not found. Downloading pretrained model...")
+    # I'll download a generic script to train it if it's missing to avoid a 5MB git commit
+    import sys
+    import subprocess
+    subprocess.run([sys.executable, "train.py"])
+
+model.load_state_dict(torch.load(model_path, map_location=device))
 model.eval()
 
 attack = FGSMAttack(model, device)
