@@ -1,81 +1,77 @@
-# FGSM Adversarial Attack Demo
+# FGSM Adversarial Attack Demonstration
 
-A full-stack application demonstrating the **Fast Gradient Sign Method (FGSM)** adversarial attack on an MNIST handwritten digit classifier.
+A full-stack application demonstrating the Fast Gradient Sign Method (FGSM) adversarial attack on an MNIST handwritten digit classifier.
 
-| Component | Tech Stack |
-|-----------|------------|
-| Backend   | FastAPI, PyTorch, Pillow |
-| Frontend  | Next.js 16, React 19, TypeScript |
-| ML Model  | Custom CNN trained on MNIST |
+## Project Overview
 
----
+This project implements a complete pipeline for testing adversarial robustness:
+*   **Backend:** A FastAPI service running a custom PyTorch Convolutional Neural Network trained on the MNIST dataset. It exposes an endpoint to perform FGSM attacks on uploaded images.
+*   **Frontend:** A Next.js single-page application that provides an interactive interface for users to upload digits, adjust the perturbation strength (epsilon), and visualize the adversarial results in real-time.
 
-## How to Run Locally
+## Deployed Services
+
+The application has been successfully deployed and is accessible at the following locations:
+*   **Frontend Web Application:** [Deployed on Vercel]
+*   **Backend API Service:** [Deployed on Render]
+
+## Local Installation and Execution
 
 ### Prerequisites
+*   Python 3.10 or higher
+*   Node.js 18 or higher
+*   npm (Node Package Manager)
 
-- Python 3.10+
-- Node.js 18+
-- npm
+### Backend Setup
 
-### Backend
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   # On Windows:
+   .\venv\Scripts\Activate.ps1
+   # On Linux/MacOS:
+   source venv/bin/activate
+   ```
+3. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Start the FastAPI server:
+   ```bash
+   uvicorn app_fgsm:app --reload
+   ```
+   *Note: If the pre-trained model weights are not found, the server will automatically download the dataset and train a new model upon startup. The API will be available at http://127.0.0.1:8000. Documentation is available at http://127.0.0.1:8000/docs.*
 
-```bash
-cd backend
+### Frontend Setup
 
-# Create virtual environment
-python -m venv venv
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install the required Node modules:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+   *The web application will be accessible at http://localhost:3000.*
 
-# Activate it
-# Windows:
-.\venv\Scripts\Activate.ps1
-# Linux/Mac:
-source venv/bin/activate
+## Technical Explanation of FGSM
 
-# Install dependencies
-pip install -r requirements.txt
+The Fast Gradient Sign Method (FGSM), introduced by Goodfellow et al. in 2015, is an effective adversarial attack technique that exploits how neural networks compute gradients during backpropagation. Instead of using gradients to update model weights to minimize loss, FGSM uses the gradient of the loss with respect to the input image to maximize the loss. 
 
-# (Optional) Train the model — a pretrained mnist_cnn.pth is included
-python train.py
+The perturbation is calculated as the sign of this gradient, scaled by a factor of epsilon, and added to the original image. The fundamental equation is: x_adv = x + epsilon * sign(gradient_x(Loss)).
 
-# Run the server
-uvicorn app_fgsm:app --reload
-```
+The key insight is that neural networks are often linearly sensitive in high-dimensional spaces. Consequently, making tiny but carefully directed changes to many pixels simultaneously can push the model's decision past a classification boundary. The epsilon parameter controls the magnitude of the perturbation. Larger values create more visible noise but are more likely to fool the model, while smaller values preserve visual quality but may not successfully change the prediction. This trade-off is central to evaluating adversarial robustness.
 
-The API will be available at **http://127.0.0.1:8000**. Visit http://127.0.0.1:8000/docs for Swagger UI.
+## Evaluation Observations
 
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open **http://localhost:3000** in your browser.
-
----
-
-## Deployed URLs
-
-| Service  | URL |
-|----------|-----|
-| Frontend | Deployed on **Vercel** |
-| Backend  | Deployed on **Render** |
-
----
-
-## Explanation of FGSM
-
-The **Fast Gradient Sign Method (FGSM)**, introduced by Goodfellow et al. (2015), is a simple yet effective adversarial attack technique. It exploits the way neural networks compute gradients during backpropagation. Instead of using the gradient to update model weights (as in training), FGSM uses the gradient of the loss with respect to the **input image** to craft a small perturbation. The perturbation is computed as the sign of this gradient, scaled by a factor ε (epsilon), and then added to the original image: `x_adv = x + ε · sign(∇_x J(θ, x, y))`.
-
-The key insight is that neural networks are often **linearly sensitive** in high-dimensional spaces — even tiny, carefully directed changes to many pixels simultaneously can push the model's decision past a classification boundary. The ε parameter controls the magnitude of the perturbation: larger values create more visible noise but are more likely to fool the model, while smaller values preserve visual quality but may not change the prediction. This trade-off is fundamental to understanding adversarial robustness.
-
----
-
-## Observations
-
-Evaluation results on 1,000 MNIST test samples:
+An automated evaluation script was run on 1,000 MNIST test samples to measure the attack success rate across various epsilon values.
 
 | Epsilon | Clean Accuracy | Adversarial Accuracy | Accuracy Drop | Attack Success Rate |
 |---------|---------------|---------------------|---------------|-------------------|
@@ -87,42 +83,36 @@ Evaluation results on 1,000 MNIST test samples:
 | 0.25    | 97.90%        | 24.40%              | 73.50%        | 73.50%            |
 | 0.30    | 97.90%        | 9.80%               | 88.10%        | 88.10%            |
 
-**Key findings:**
-- The model achieves **97.9% clean accuracy** on the first 1,000 test samples.
-- Even a small ε of **0.05** causes ~4% accuracy loss.
-- At ε = **0.20**, the attack succeeds on **half** of all samples.
-- At ε = **0.30**, only **9.8%** of predictions remain correct — an **88% accuracy drop**.
-- Increasing epsilon monotonically increases attack success rate, confirming that larger perturbations produce stronger attacks.
-- The relationship between ε and accuracy drop is roughly **linear** up to ε ≈ 0.20, then the curve flattens as the model is nearly fully compromised.
-
----
+Key findings from the evaluation:
+*   The baseline Convolutional Neural Network achieves 97.9% accuracy on clean test samples.
+*   Even a minimal epsilon of 0.05 induces an accuracy loss of approximately 4%.
+*   At an epsilon of 0.20, the attack successfully compromises the model on exactly half of all evaluated samples.
+*   At an epsilon of 0.30, the model retains only a 9.8% accuracy rate, reflecting a massive 88% overall accuracy drop.
+*   The relationship between epsilon and accuracy degradation is roughly linear up to an epsilon of 0.20. Beyond this point, the curve flattens as the model reaches near-total failure.
+*   These results consistently demonstrate that increasing the perturbation magnitude strictly increases the attack success rate.
 
 ## Project Structure
 
-```
+```text
 DevNeuronAssessment/
 ├── backend/
-│   ├── app_fgsm.py          # FastAPI application (POST /attack endpoint)
-│   ├── fgsm.py              # FGSM attack class implementation
-│   ├── model.py             # SimpleCNN model architecture
-│   ├── train.py             # Model training script
-│   ├── test_fgsm.py         # Quick FGSM test script
-│   ├── evaluate_fgsm.py     # Full evaluation across epsilon values
-│   ├── requirements.txt     # Python dependencies
-│   └── mnist_cnn.pth        # Pretrained model weights
+│   ├── app_fgsm.py          # FastAPI application handling API requests
+│   ├── fgsm.py              # Implementation of the FGSM adversarial attack
+│   ├── model.py             # Simple CNN architecture definition
+│   ├── train.py             # Script for training the CNN on MNIST
+│   ├── test_fgsm.py         # Utility script for testing the attack logic
+│   ├── evaluate_fgsm.py     # Script to generate the evaluation metrics table
+│   └── requirements.txt     # Python environment dependencies
 ├── frontend/
 │   ├── app/
-│   │   ├── layout.tsx       # Root layout with fonts & metadata
-│   │   ├── page.tsx         # Main SPA page (upload, slider, results)
-│   │   └── globals.css      # Design system (dark theme, glassmorphism)
-│   ├── package.json
-│   └── next.config.ts
-└── README.md
+│   │   ├── layout.tsx       # Root Next.js layout with font setup
+│   │   ├── page.tsx         # Main interactive interface component
+│   │   └── globals.css      # Custom styling and design system
+│   └── package.json         # Node.js project configuration
+└── README.md                # Project documentation and setup guide
 ```
-
----
 
 ## References
 
-- Goodfellow, I.J., Shlens, J., & Szegedy, C. (2015). [Explaining and Harnessing Adversarial Examples](https://arxiv.org/abs/1412.6572). *ICLR 2015*.
-- [PyTorch FGSM Tutorial](https://pytorch.org/tutorials/beginner/fgsm_tutorial.html)
+*   Goodfellow, I.J., Shlens, J., and Szegedy, C. (2015). Explaining and Harnessing Adversarial Examples. International Conference on Learning Representations (ICLR).
+*   PyTorch Documentation: FGSM Tutorial.
